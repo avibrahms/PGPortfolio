@@ -82,6 +82,8 @@ def get_type_list(feature_number):
         type_list = ["close", "high", "low"]
     elif feature_number == 4:
         type_list = ["close", "high", "low", "open"]
+    elif feature_number == 5:
+        type_list = ["close", "high", "low", "open","volume"]
     else:
         raise ValueError("feature number could not be %s" % feature_number)
     return type_list
@@ -104,10 +106,12 @@ def count_periods(start, end, period_length):
     return (int(end)-int(start)) // period_length
 
 
-def get_volume_forward(time_span, portion, portion_reversed):
+def get_volume_forward(time_span, portion, portion_reversed,latest=False,is_backtest=False):
     volume_forward = 0
-    if not portion_reversed:
-        volume_forward = time_span*portion
+    if not latest:
+        if not is_backtest:
+            if not portion_reversed:
+                volume_forward = time_span*portion
     return volume_forward
 
 

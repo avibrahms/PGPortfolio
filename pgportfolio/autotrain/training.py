@@ -65,6 +65,7 @@ def train_all(processes=1, device="cpu"):
                 dir, logfile_level, console_level, device))
             p.start()
             pool.append(p)
+            #train_one("./" + train_dir + "/" + dir + "/netfile", load_config(dir), "./" + train_dir + "/" + dir + "/tensorboard", dir, logfile_level, console_level, device)
         else:
             continue
 
@@ -79,3 +80,5 @@ def train_all(processes=1, device="cpu"):
             if len(pool)<processes:
                 wait = False
     print("All the Tasks are Over")
+
+

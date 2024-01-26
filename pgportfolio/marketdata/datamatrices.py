@@ -8,14 +8,15 @@ import logging
 from pgportfolio.tools.configprocess import parse_time
 from pgportfolio.tools.data import get_volume_forward, get_type_list
 import pgportfolio.marketdata.replaybuffer as rb
+import random
 
 MIN_NUM_PERIOD = 3
 
 
 class DataMatrices:
-    def __init__(self, start, end, period, batch_size=50, volume_average_days=30, buffer_bias_ratio=0,
-                 market="poloniex", coin_filter=1, window_size=50, feature_number=3, test_portion=0.15,
-                 portion_reversed=False, online=False, is_permed=False):
+    def __init__(self, market,exchange, start, end, period,granularity=60, batch_size=50, volume_average_days=30, buffer_bias_ratio=0,
+                 coin_filter=1, window_size=50, feature_number=3, test_portion=0.15,
+                 portion_reversed=False, online=False, is_permed=False, live_trading=False,is_backtest=False):
         """
         :param start: Unix time
         :param end: Unix time
@@ -40,25 +41,29 @@ class DataMatrices:
         type_list = get_type_list(feature_number)
         self.__features = type_list
         self.feature_number = feature_number
-        volume_forward = get_volume_forward(self.__end-start, test_portion, portion_reversed)
-        self.__history_manager = gdm.HistoryManager(coin_number=coin_filter, end=self.__end,
+        volume_forward = get_volume_forward(self.__end-start, test_portion, portion_reversed,live_trading,is_backtest)
+        self.__history_manager = gdm.HistoryManager(market,exchange,coin_number=coin_filter, end=self.__end,
                                                     volume_average_days=volume_average_days,
-                                                    volume_forward=volume_forward, online=online)
-        if market == "poloniex":
-            self.__global_data = self.__history_manager.get_global_panel(start,
+                                                    volume_forward=volume_forward, online=online, live_trading=live_trading)
+
+        #if market == "poloniex":
+        self.__global_data = self.__history_manager.get_global_panel(start,
                                                                          self.__end,
                                                                          period=period,
-                                                                         features=type_list)
-        else:
-            raise ValueError("market {} is not valid".format(market))
+                                                                         granularity=granularity,
+                                                                         features=type_list,
+                                                                         is_backtest=is_backtest)
+        # else:
+        #     raise ValueError("market {} is not valid".format(market))
         self.__period_length = period
-        # portfolio vector memory, [time, assets]
-        self.__PVM = pd.DataFrame(index=self.__global_data.minor_axis,
-                                  columns=self.__global_data.major_axis)
-        self.__PVM = self.__PVM.fillna(1.0 / self.__coin_no)
-
         self._window_size = window_size
-        self._num_periods = len(self.__global_data.minor_axis)
+        # portfolio vector memory, [time, assets]
+        self.__PVM = pd.DataFrame(index=self.__global_data[0].minor_axis,
+                                  columns=self.__global_data[0].major_axis)
+        self.__PVM = self.__PVM.fillna(1.0 / self.__coin_no)
+        self.__granularity_length = granularity
+
+        self._num_periods = len(self.__global_data[0].minor_axis)
         self.__divide_data(test_portion, portion_reversed)
 
         self._portion_reversed = portion_reversed
@@ -66,6 +71,8 @@ class DataMatrices:
 
         self.__batch_size = batch_size
         self.__delta = 0  # the count of global increased
+        self.pack_training_data = False
+
         end_index = self._train_ind[-1]
         self.__replay_buffer = rb.ReplayBuffer(start_index=self._train_ind[0],
                                                end_index=end_index,
@@ -94,13 +101,15 @@ class DataMatrices:
         train_config = config["training"]
         start = parse_time(input_config["start_date"])
         end = parse_time(input_config["end_date"])
-        return DataMatrices(start=start,
+        return DataMatrices(exchange=input_config["exchange"],
+                            start=start,
                             end=end,
                             market=input_config["market"],
                             feature_number=input_config["feature_number"],
                             window_size=input_config["window_size"],
                             online=input_config["online"],
                             period=input_config["global_period"],
+                            granularity=input_config["trading_granularity"],
                             coin_filter=input_config["coin_number"],
                             is_permed=input_config["is_permed"],
                             buffer_bias_ratio=train_config["buffer_biased"],
@@ -108,11 +117,13 @@ class DataMatrices:
                             volume_average_days=input_config["volume_average_days"],
                             test_portion=input_config["test_portion"],
                             portion_reversed=input_config["portion_reversed"],
+                            live_trading=input_config["live_trading"],
+                            is_backtest=input_config["is_backtest"]
                             )
 
-    @property
-    def global_matrix(self):
-        return self.__global_data
+    # @property
+    # def global_matrix(self):
+    #     return self.__global_data
 
     @property
     def coin_list(self):
@@ -124,7 +135,7 @@ class DataMatrices:
 
     @property
     def test_indices(self):
-        return self._test_ind[:-(self._window_size+1):]
+            return self._test_ind[:-(self._window_size+1):]
 
     @property
     def num_test_samples(self):
@@ -144,6 +155,7 @@ class DataMatrices:
         return self.__pack_samples(self.test_indices)
 
     def get_training_set(self):
+        self.pack_training_data = True
         return self.__pack_samples(self._train_ind[:-self._window_size])
 
     def next_batch(self):
@@ -170,7 +182,16 @@ class DataMatrices:
 
     # volume in y is the volume in next access period
     def get_submatrix(self, ind):
-        return self.__global_data.values[:, :, ind:ind+self._window_size+1]
+        if self.pack_training_data:
+            panel_indice = random.randint(0,int(self.__period_length/self.__granularity_length)-1)
+            # check that ind fits into panel
+            size_panel = self.__global_data[panel_indice].shape[2]
+            ind_ = max(0,min(ind,size_panel-self._window_size-2))
+            self.pack_training_data = False
+        else:
+            panel_indice = 0
+            ind_ = ind
+        return self.__global_data[panel_indice].values[:, :, ind_:ind_+self._window_size+1]
 
     def __divide_data(self, test_portion, portion_reversed):
         train_portion = 1 - test_portion
@@ -190,5 +211,5 @@ class DataMatrices:
         # NOTE(zhengyao): change the logic here in order to fit both
         # reversed and normal version
         self._train_ind = list(self._train_ind)
-        self._num_train_samples = len(self._train_ind)
         self._num_test_samples = len(self.test_indices)
+        self._num_train_samples = len(self._train_ind)

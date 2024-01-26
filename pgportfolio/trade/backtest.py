@@ -62,6 +62,7 @@ class BackTest(trader.Trader):
 
     def generate_history_matrix(self):
         inputs = self.__get_matrix_X()
+        inputs = inputs[:,:self._coin_number,:] #select coins for multi_backtesting / coin_number is changes everytime
         if self._agent_type == "traditional":
             inputs = np.concatenate([np.ones([1, 1, inputs.shape[2]]), inputs], axis=1)
             inputs = inputs[:, :, 1:] / inputs[:, :, :-1]
@@ -70,13 +71,40 @@ class BackTest(trader.Trader):
     def trade_by_strategy(self, omega):
         logging.info("the step is {}".format(self._steps))
         logging.debug("the raw omega is {}".format(omega))
-        future_price = np.concatenate((np.ones(1), self.__get_matrix_y()))
-        pv_after_commission = calculate_pv_after_commission(omega, self._last_omega, self._commission_rate)
-        portfolio_change = pv_after_commission * np.dot(omega, future_price)
-        self._total_capital *= portfolio_change
+        matrix_y = self.__get_matrix_y()
+        matrix_y = matrix_y[:self._coin_number] #select coins for multi_backtesting / coin_number is changes everytime
+        future_price = np.concatenate((np.ones(1), matrix_y)) # for next period
+        pv_after_commission = calculate_pv_after_commission(omega, self._last_omega, self._commission_rate) # for this period
+        portfolio_change = pv_after_commission * np.dot(omega, future_price) #for next period
+        self._total_capital *= portfolio_change #for next period
         self._last_omega = pv_after_commission * omega * \
                            future_price /\
-                           portfolio_change
+                           portfolio_change # for next period!
         logging.debug("the portfolio change this period is : {}".format(portfolio_change))
         self.__test_pc_vector.append(portfolio_change)
+        logging.info('total assets are %3f BTC' % self._total_capital)
+        logging.info('full portfolio change : {}'.format(self._total_capital / self._initial_btc))
+        logging.debug("=" * 30)
 
+
+    def _round_omega(self,omega,total_capital):
+        price_BTC = 10000
+        twenty_usd_in_BTC = 20.0 / price_BTC
+        threshold = twenty_usd_in_BTC / total_capital
+        zero_indices = []
+        for i,w in enumerate(omega):
+            if w <= threshold:
+                zero_indices.append(i)
+        len_zero_indices = len(zero_indices)
+        len_omega = len(omega)
+        if len_zero_indices == len_omega:
+            omega = np.concatenate((np.ones(1),np.zeros(len_omega-1)))
+        else:
+            omega = np.array(omega)
+            omega += sum(omega[zero_indices])/(len_omega-len_zero_indices)
+            omega[zero_indices]=0
+            if sum(omega) != 0:
+                omega = omega / sum(omega)
+            else:
+                omega = np.concatenate((np.ones(1), np.zeros(len_omega - 1)))
+        return omega

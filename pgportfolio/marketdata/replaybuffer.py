@@ -1,6 +1,7 @@
 from __future__ import division,absolute_import,print_function
 import numpy as np
 import logging
+import random
 
 
 class ReplayBuffer:
@@ -28,6 +29,7 @@ class ReplayBuffer:
         """
         # TODO: deal with the case when bias is 0
         ran = np.random.geometric(bias)
+        # ran = random.randint(start,end)
         while ran > end - start:
             ran = np.random.geometric(bias)
         result = end - ran

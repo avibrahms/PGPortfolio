@@ -3,6 +3,7 @@ import json
 import os
 import logging
 from os import path
+import random
 
 
 def add_packages(config, repeat=1):
@@ -21,7 +22,7 @@ def add_packages(config, repeat=1):
     for i in range(repeat):
         max_dir_num += 1
         directory = package_dir+"/"+str(max_dir_num)
-        config["random_seed"] = i
+        config["random_seed"] = random.randint(i*1000000,i*1000000+999999)
         os.makedirs(directory)
         indexes.append(max_dir_num)
         with open(directory + "/" + "net_config.json", 'w') as outfile:

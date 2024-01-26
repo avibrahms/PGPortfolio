@@ -36,6 +36,17 @@ def fill_train_config(train_config):
 
 
 def fill_input_default(input_config):
+    set_missing(input_config, "is_backtest", False)
+    set_missing(input_config, "silent", False)
+    set_missing(input_config, "warmup", True)
+    set_missing(input_config, "simulation", True)
+    set_missing(input_config, "trading_granularity", 60)
+    set_missing(input_config, "trading_delay", -1)
+    set_missing(input_config, "initial_BTC", 1.0)
+    set_missing(input_config, "unused_btc", 0.0)
+    set_missing(input_config, "unused_usdt", 0.0)
+    set_missing(input_config, "min_usd_trade", 50.0)
+    set_missing(input_config, "live_trading", False)
     set_missing(input_config, "save_memory_mode", False)
     set_missing(input_config, "portion_reversed", False)
     set_missing(input_config, "market", "poloniex")

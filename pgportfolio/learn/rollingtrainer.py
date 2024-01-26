@@ -57,3 +57,4 @@ class RollingTrainer(TraderTrainer):
                 x, y, last_w, w = self.next_batch()
                 self._agent.train(x, y, last_w, w)
             self.__rolling_logging()
+

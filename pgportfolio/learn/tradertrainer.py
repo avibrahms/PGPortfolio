@@ -44,17 +44,19 @@ class TraderTrainer:
         self.input_config = config["input"]
         self.save_path = save_path
         self.best_metric = 0
+        self.best_step = 0
         np.random.seed(config["random_seed"])
-
+        self.____exchange = self.input_config["exchange"]
         self.__window_size = self.input_config["window_size"]
         self.__coin_number = self.input_config["coin_number"]
         self.__batch_size = self.train_config["batch_size"]
         self.__snap_shot = self.train_config["snap_shot"]
         config["input"]["fake_data"] = fake_data
 
-        self._matrix = DataMatrices.create_from_config(config)
 
-        self.test_set = self._matrix.get_test_set()
+        self._matrix = DataMatrices.create_from_config(config)
+        if config['input']['simulation']:
+            self.test_set = self._matrix.get_test_set()
         if not config["training"]["fast_train"]:
             self.training_set = self._matrix.get_training_set()
         self.upperbound_validation = 1
@@ -69,7 +71,7 @@ class TraderTrainer:
                 with tf.device("/cpu:0"):
                     self._agent = NNAgent(config, restore_dir, device)
             else:
-                self._agent = NNAgent(config, restore_dir, device)
+                    self._agent = NNAgent(config, restore_dir, device)
 
     def _evaluate(self, set_name, *tensors):
         if set_name == "test":
@@ -114,19 +116,20 @@ class TraderTrainer:
         if not fast_train:
             logging.info('training loss is %s\n' % loss_value)
         logging.info('the portfolio value on test set is %s\nlog_mean is %s\n'
-                     'loss_value is %3f\nlog mean without commission fee is %3f\n' % \
+                     'loss_value is %3f\nlog mean without commission fee is %3f' % \
                      (v_pv, v_log_mean, v_loss, log_mean_free))
-        logging.info('='*30+"\n")
+        logging.info('-'*30)
 
         if not self.__snap_shot:
             self._agent.save_model(self.save_path)
         elif v_pv > self.best_metric:
             self.best_metric = v_pv
-            logging.info("get better model at %s steps,"
-                         " whose test portfolio value is %s" % (step, v_pv))
+            self.best_step = step
             if self.save_path:
                 self._agent.save_model(self.save_path)
         self.check_abnormal(v_pv, weights)
+        logging.info("get better model at %s steps,"
+                     " whose test portfolio value is %s" % (self.best_step, self.best_metric))
 
     def check_abnormal(self, portfolio_value, weigths):
         if portfolio_value == 1.0:
@@ -146,13 +149,6 @@ class TraderTrainer:
         tf.summary.scalar('log_mean', self._agent.log_mean)
         tf.summary.scalar('loss', self._agent.loss)
         tf.summary.scalar("log_mean_free", self._agent.log_mean_free)
-        for layer_key in self._agent.layers_dict:
-            tf.summary.histogram(layer_key, self._agent.layers_dict[layer_key])
-        for var in tf.trainable_variables():
-            tf.summary.histogram(var.name, var)
-        grads = tf.gradients(self._agent.loss, tf.trainable_variables())
-        for grad in grads:
-            tf.summary.histogram(grad.name + '/gradient', grad)
         self.summary = tf.summary.merge_all()
         location = log_file_dir
         self.network_writer = tf.summary.FileWriter(location + '/network',
@@ -176,7 +172,7 @@ class TraderTrainer:
                 with tf.device("/cpu:0"):
                     self.__init_tensor_board(log_file_dir)
             else:
-                self.__init_tensor_board(log_file_dir)
+                    self.__init_tensor_board(log_file_dir)
         starttime = time.time()
 
         total_data_time = 0
@@ -189,11 +185,11 @@ class TraderTrainer:
             self._agent.train(x, y, last_w=last_w, setw=setw)
             total_training_time += time.time() - finish_data
             if i % 1000 == 0 and log_file_dir:
-                logging.info("average time for data accessing is %s"%(total_data_time/1000))
-                logging.info("average time for training is %s"%(total_training_time/1000))
+                self.log_between_steps(i)
+                logging.info("Total data accessing time: %s"%(total_data_time))
+                logging.info("Total training time: %s"%(total_training_time))
                 total_training_time = 0
                 total_data_time = 0
-                self.log_between_steps(i)
 
         if self.save_path:
             self._agent.recycle()
@@ -243,3 +239,12 @@ class TraderTrainer:
             dataframe.to_csv(csv_dir)
         return result
 
+    def change_agent(self,algo, coin_number, device="cpu"):
+        self._agent.recycle()
+        self.config["input"]["coin_number"] = coin_number
+        if device == "cpu":
+            os.environ["CUDA_VISIBLE_DEVICES"] = ""
+            with tf.device("/cpu:0"):
+                self._agent = NNAgent(self.config, restore_dir="./train_package/" + str(algo) + "/netfile", device=device)
+        else:
+            self._agent = NNAgent(self.config, restore_dir="./train_package/" + str(algo) + "/netfile", device=device)
