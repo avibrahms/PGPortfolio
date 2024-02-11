@@ -33,10 +33,10 @@ class CoinList(object):
                     if c != 'BTC':
                         if k.endswith('_BTC'):
                             coins[i] = 'reversed_' + c
-                            prices[i] = 1.0 / float(ticker[k]['last'])
+                            prices[i] = 1.0 / float(ticker[k]['last']) if ticker[k]['last'] else 0
                         else:
                             coins[i] = c
-                            prices[i] = float(ticker[k]['last'])
+                            prices[i] = float(ticker[k]['last']) if ticker[k]['last'] else 0
                     else:
                         volumes[i] = self.__get_total_volume(pair=k, global_end=end,
                                                                days=volume_average_days,

@@ -98,14 +98,14 @@ class Poloniex:
 
         if command == 'returnTicker':
             tickers_ccxt = self.eX.fetch_tickers()
-            # print(tickers_ccxt)
+            # print(tickers_ccxt, tickers_ccxt.keys())
             tickers = {}
             for symbol, data in tickers_ccxt.items():
                 if "/" in symbol:
                     quote, base = str(symbol).split("/")
                     new_symbol = base + "_" + quote
                     tickers[new_symbol] = data
-            #print(tickers)
+            # print(tickers, tickers.keys())
             return tickers
         elif command == "return24hVolume":
             tickers_ccxt = self.eX.fetch_tickers()

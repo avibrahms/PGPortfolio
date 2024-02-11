@@ -16,7 +16,7 @@ from pgportfolio.resultprocess import plot
 def build_parser():
     parser = ArgumentParser()
     parser.add_argument("--mode",dest="mode",
-                        help="start mode, train, generate, download_data, backtest, multi_backtest",
+                        help="train, generate, download_data, backtest, multi_backtest",
                         metavar="MODE", default="trade")
     parser.add_argument("--processes", dest="processes",
                         help="number of processes you want to start to train the network",
