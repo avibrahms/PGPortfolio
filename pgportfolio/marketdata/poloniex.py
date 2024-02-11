@@ -37,20 +37,18 @@ PUBLIC_COMMANDS = ['returnTicker', 'return24hVolume', 'returnOrderBook', 'return
 
 class Poloniex:
     def __init__(self, market, exchange, APIKey='', Secret=''):
-        self.list_exchanges = {"kucoin":ccxt.kucoin(),"hitbtc":ccxt.hitbtc(),"poloniex":ccxt.poloniex(),
-                          "bittrex":ccxt.bittrex(),"binance":ccxt.binance(),"bitfinex":ccxt.bitfinex(),
-                          "bithumb": ccxt.bithumb(),"bitstamp":ccxt.bitstamp(),"bitmex":ccxt.bitmex()}
+        self.list_exchanges = {"kucoin":ccxt.kucoin(), "binance":ccxt.binance()}
         if market in self.list_exchanges.keys():
             self.market = self.list_exchanges[market]
             print("Training on", market)
         else:
-            print("Market ",market," is not supported. Supported markets: ",list_exchanges.keys())
+            print("Market ",market," is not supported. Supported markets: ", self.list_exchanges.keys())
             time.sleep(5)
         if exchange in self.list_exchanges.keys():
             self.exchange = self.list_exchanges[exchange]
             print("Trade on", exchange)
         else:
-            print("Exchange ",exchange," is not supported. Supported exchanges: ",list_exchanges.keys())
+            print("Exchange ",exchange," is not supported. Supported exchanges: ", self.list_exchanges.keys())
             time.sleep(5)
         #self.common = self.give_common_pairs(self.exchange,ccxt.poloniex())
         self.common = self.give_common_pairs(self.exchange, self.market)
