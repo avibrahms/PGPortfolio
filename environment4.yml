@@ -1,0 +1,13 @@
+name: pgp4
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.5
+  - pip
+  - pip:
+    - ccxt
+    - matplotlib
+    - numpy
+    - pandas
+    - scipy
