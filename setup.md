@@ -1,6 +1,7 @@
 # If the setup.sh script doesn't work, you can use the following commands to create the environment and install the required packages:
 
-# Note: this script installs the repo as is was on 2018-03-16
+# Note: this script installs the repo as is was on 2018-03-16, the environment.yml file is an attempt to update the packages to the latest version, but it doesn't work as pandas panels need to be replaced (deprecated after pandas=0.25.0) and the tensorflow version is not compatible with tensorflow 2.x
+
 # Note: this script works on ubuntu 22 with an intel architecture (x86_64) , doesn't work on arm64 (mac)
 
 # First create a new environment with the following command:
