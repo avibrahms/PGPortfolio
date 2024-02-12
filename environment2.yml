@@ -1,0 +1,16 @@
+name: pgp2
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.6
+  - pip
+  - pip:
+    - ccxt
+    - matplotlib
+    - numpy
+    - pandas==0.19.2
+    - pillow
+    - scipy
+    - tensorflow
+    - git+https://github.com/MihaMarkic/tflearn.git@fix/is_sequence_missing
