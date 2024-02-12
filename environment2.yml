@@ -9,7 +9,7 @@ dependencies:
     - ccxt
     - matplotlib
     - numpy
-    - pandas==0.19.2
+    - pandas==0.20.0
     - pillow
     - scipy
     - tensorflow

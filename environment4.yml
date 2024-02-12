@@ -8,5 +8,6 @@ dependencies:
   - pip:
     - matplotlib
     - numpy
-    - pandas
+    - pandas==0.20.0
     - scipy
+    - 
