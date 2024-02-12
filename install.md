@@ -1,3 +1,5 @@
+# Not this script works on ubuntu 22 with an intel architecture (x86_64) , doesn't work on arm64 (mac):
+
 # First create a new environment with the following command:
 conda create --name pgp python=3.5
 # Then activate the environment with the following command:
