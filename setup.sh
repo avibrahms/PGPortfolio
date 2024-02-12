@@ -26,4 +26,4 @@ echo "Attempting to install tflearn from GitHub repository..."
   pip install git+https://github.com/MihaMarkic/tflearn.git@fix/is_sequence_missing
 )
 
-echo "Setup completed. please type 'conda activate pgp' to activate the environment."
+echo "Succesfully completed. please type 'conda activate pgp' to activate the environment."
