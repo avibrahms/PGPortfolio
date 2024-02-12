@@ -1,0 +1,12 @@
+name: pgp5
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.4
+  - pip
+  - pip:
+    - matplotlib
+    - numpy
+    - pandas
+    - scipy
